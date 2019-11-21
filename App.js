@@ -1,195 +1,151 @@
-import React , { Component } from 'react';
+import React, { Component } from 'react'
 import {
   SafeAreaView,
+  StatusBar,
   View,
   Text,
-  TouchableOpacity
-
-} from 'react-native';
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native'
+import Card from './Card'
 
 class App extends Component {
   state = {
-  corrects: 0,
-  currentIndex: 0,
-  isDisabled : false, 
-  buttonClass: [
-    '', '', '', ''
-  ],
-  statusBarWidth: '1%',
-  topics: [
-    {
-      question: 'JavaScript 與 Java 有什麼關係？',
-      answers: [
-        {
-          value: '同公司的產品',
-          correct: false,
-        },
-        {
-          value: '新版與舊版的關係',
-          correct: false,
-        },
-        {
-          value: '一點關係也沒有',
-          correct: true,
-        },
-        {
-          value: 'JavaScript 是 Java 的 Web 版本',
-          correct: false,
-        },
-      ]
-    },
-    {
-      question: '發明 React JS 的公司是？',
-      answers: [
-        {
-          value: 'Google',
-          correct: false,
-        },
-        {
-          value: 'Facebook',
-          correct: true,
-        },
-        {
-          value: 'Apple',
-          correct: false,
-        },
-        {
-          value: 'Microsoft',
-          correct: false,
-        },
-      ]
-    }
-  ]
-}
+    cardSymbols: [
+      '☺️', '🤩', '😎', '💩', '❤️', '⭐️', '🤘', '👍'
+    ],
+    cardSymbolsInRand: [],
+    isOpen: [],
+    firstPickedIndex: null,
+    secondPickedIndex: null,
+  }
 
-next = (index, correct) => {
-  //1
-  if (correct) {
+  componentDidMount() {
+    // Duplicate Symbols x 2
+    let newCardSymbols = [...this.state.cardSymbols, ...this.state.cardSymbols]
+    let cardSymbolsInRand = this.shuffleArray(newCardSymbols)
+
+    // Init isOpen Array according to the length of symbol array
+    let isOpen = []
+    for (let i = 0; i < newCardSymbols.length; i++) {
+      isOpen.push(false)
+    }
+
     this.setState({
-      corrects: this.state.corrects + 1
+      cardSymbolsInRand: cardSymbolsInRand,
+      isOpen: isOpen,
     })
   }
 
-  this.setState({
-    isDisabled :  true
-  }) 
+   cardPressHandler = (index) => {
+     let newIsOpen = [...this.state.isOpen]
+     newIsOpen[index] = true
 
-  //2
-  let newButtonClass = [...this.state.buttonClass]
-  newButtonClass[index] = (correct) ? 'correct' : 'wrong'
-  
-  setTimeout(()=> {
-    this.setState({
-      buttonClass : newButtonClass
-    })
-  },150)
+      // Check the current game flow
+      if (this.state.firstPickedIndex == null && this.state.secondPickedIndex == null) {
+        // First Choice
+        this.setState({
+          isOpen: newIsOpen,
+          firstPickedIndex: index,
+        })
+      } else if (this.state.firstPickedIndex != null && this.state.secondPickedIndex == null) {
+        // Second Choice
+        this.setState({
+          isOpen: newIsOpen,
+          secondPickedIndex: index,
+        })
+      }
 
+     this.setState({
+       isOpen: newIsOpen
+     })
+   }
 
-  //3
-  setTimeout(()=> {
-    this.setState({
-      currentIndex : this.state.currentIndex + 1,
-      buttonClass : ['','','',''],
-      statusBarWidth: `${ (this.state.currentIndex + 1 ) / this.state.topics.length * 100}%`
-    })
-
-    this.setState({
-      isDisabled :  false
-    }) 
-
-  },1200)  
-
-}
-
-startOver = () => {
-    setTimeout(() => {
-    this.setState({
-      corrects: 0,
-      currentIndex: 0,
-      buttonClass: ['', '', '', ''],
-      statusBarWidth: '1%',
-    })
-  }, 300)
-}
-
-componentDidMount() {
-  document.addEventListener("touchstart", function() {},false);
-}
+  shuffleArray = (arr) => {
+    const newArr = arr.slice()
+    for (let i = newArr.length - 1; i > 0; i--) {
+      const rand = Math.floor(Math.random() * (i + 1));
+      [newArr[i], newArr[rand]] = [newArr[rand], newArr[i]];
+    }
+    return newArr
+  };
 
   render() {
     return (
-      <View style={ styles.App } >
-        <View style={ styles.statusBar} style = { {width: this.state.statusBarWidth} }></View>
-
-        { (this.state.currentIndex < this.state.topics.length) ? 
-
-          (
-          <View style={ styles.topicsContainer }">
-
-
-            <Text> {this.state.topics[this.state.currentIndex].question}</Text>
-
-      
-           {this.state.topics[this.state.currentIndex].answers.map((answer,index) =>{
-              return (
-                <>
-                  <TouchableOpacity onPress={ ()=> this.next(index, answer.correct) } >
-                    <Text style={styles.buttonText} >{answer.value}</Text>
-                  </TouchableOpacity>
-                </>
-                );
-
-            })}
-          </View>
-          ) :
-
-          (
-            <View style={ styles.fireworks}>
-              <View style={ styles.before}></View>
-              <View style={ styles.after}></View>
-              <View style={ styles.result}>
-                <Text>Completed!</Text>
-                <Text>Your Score is {(Math.round((this.state.corrects / this.state.topics.length) * 100)) || 0}</Text>
-                <TouchableOpacity onPress={ ()=> {this.startOver} } >
-                  <Text >Start Over</Text>
-                </TouchableOpacity>
-
-              </View>
-            </View>
-          )
-        }
-
-      </View>
+      <>
+        <StatusBar />
+        <SafeAreaView style={ styles.container }>
+          <View style={ styles.header }>
+            <Text style={ styles.heading }>
+            </Text>
+           </View>
+          <View style={ styles.main }>
+              <View style={ styles.gameBoard }>
+                  {this.state.cardSymbolsInRand.map((symbol, index) => 
+                    <Card key={index} style={ styles.button } onPress={ () => this.cardPressHandler(index) } fontSize={30} title={symbol} cover="❓" isShow={this.state.isOpen[index]}></Card>
+                  )}
+                </View>
+           </View>
+          <View style={ styles.footer }>
+            <Text style={ styles.footerText }>Footer Text</Text>
+           </View>
+        </SafeAreaView>
+      </>
     )
   }
 }
 
-const styles= StyleSheet.create({
-  App :{
-
-  },
+const styles = StyleSheet.create({
   container: {
-
+    flex: 1,
   },
-  statusBar:{
-
+  header: {
+    flex: 1,
+    backgroundColor: '#eee',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  topicsContainer: {
-
+  main: {
+    flex: 3,
+    backgroundColor: 'yellow',
   },
-  fireworks: {
-
+  footer: {
+    flex: 1,
+    backgroundColor: '#eee',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  before: {
-
+  heading: {
+    fontSize: 32,
+    fontWeight: '600',
+    textAlign: 'center',
   },
-  after: {
-
+  footerText: {
+    fontSize: 20,
+    textAlign: 'center',
   },
-  result: {
+  gameBoard: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    alignContent: 'center',
+    margin: (Dimensions.get('window').width - (48 * 4)) / (4 * 2) - (4 * 2),
+  },
+  button: {
+    backgroundColor: '#ccc',
+    borderRadius: 8,
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: (Dimensions.get('window').width - (48 * 4)) / (4 * 2) - (4 * 2),
+  },
+  buttonText: {
+    fontSize: 30,
+  },
+})
 
-  }
-});
-
-
-export default App;
+export default App 
